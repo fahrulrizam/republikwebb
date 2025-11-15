@@ -1,13 +1,15 @@
 export async function submitApplication(formData) {
-  const res = await fetch("http://localhost:5000/api/applications", {
+  // Ganti localhost:5000 dengan URL Render Anda (https://republikweb-app.onrender.com)
+  const backendUrl = "https://republikweb-app.onrender.com"; 
+  
+  // PERBAIKAN ENDPOINT: Backend Anda menggunakan '/api/register', BUKAN '/api/applications'
+  const endpoint = "/api/register"; 
+  
+  const res = await fetch(`${backendUrl}${endpoint}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(formData),
   });
 
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ message: "unknown" }));
-    throw new Error(err.message || "Gagal mengirim aplikasi");
-  }
-  return res.json();
+  // ... (kode penanganan error lainnya)
 }
