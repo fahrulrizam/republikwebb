@@ -1,0 +1,20 @@
+# Dependencies (Library yang diinstal)
+/node_modules
+/backend/node_modules
+
+# Environment Variables (SANGAT PENTING: Untuk keamanan)
+.env
+/backend/.env
+
+# Build Output
+/build
+/dist
+/out
+/package
+
+# Log Files
+npm-debug.log
+yarn-error.log
+
+# VS Code Files (Opsional, tapi disarankan)
+.vscode/
