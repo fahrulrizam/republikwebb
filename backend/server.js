@@ -1,31 +1,38 @@
 // server.js
 
 // --- 1. SETUP DAN IMPOR ---
+// Wajib dimuat paling awal untuk membaca .env
 require('dotenv').config(); 
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors'); 
-const User = require('./models/User'); // Pastikan file ini ada di ./models/User.js
+const User = require('./models/User'); 
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const MONGODB_URI = process.env.MONGODB_URI; 
+// PERBAIKAN KRITIS: Ganti process.env.MONGODB_URI menjadi process.env.MONGO_URI
+// atau pastikan nama variabel di file .env adalah MONGODB_URI.
+// (Diasumsikan Anda menggunakan MONGO_URI di file .env sebelumnya, maka kami sesuaikan di sini)
+const MONGODB_URI = process.env.MONGO_URI; 
 
 // --- 2. MIDDLEWARE ---
-// Wajib: Izinkan server untuk membaca body permintaan sebagai JSON
 app.use(express.json()); 
-
-// Wajib: Konfigurasi CORS: Izinkan permintaan dari semua origin (mengatasi 'Failed to fetch' di development)
 app.use(cors());
 
 // --- 3. KONEKSI DATABASE ---
+// Pengecekan agar MONGODB_URI tidak undefined sebelum mencoba connect
+if (!MONGODB_URI) {
+    console.error("❌ Variabel MONGO_URI tidak ditemukan di file .env!");
+    process.exit(1);
+}
+
 mongoose.connect(MONGODB_URI)
     .then(() => console.log('✅ MongoDB Atlas Connected successfully!'))
     .catch(err => {
-        // PERBAIKAN: Jika ada 'bad auth' (password salah), tampilkan error dan HENTIKAN server
-        console.error('❌ MongoDB connection error: Harap periksa MONGODB_URI dan Password Anda. Error:', err.message);
-        process.exit(1); 
-    });
+        // Penanganan error koneksi (autentikasi atau jaringan)
+        console.error('❌ MongoDB connection error: Harap periksa MONGODB_URI dan Password Anda. Error:', err.message);
+        process.exit(1); 
+    });
 
 
 // --- 4. RUTE UTAMA (Testing Koneksi) ---
@@ -35,20 +42,20 @@ app.get('/', (req, res) => {
 
 
 // --- 5. RUTE BARU UNTUK MENYIMPAN DATA APLIKASI ---
-app.post('/api/register', async (req, res) => {
+app.post('/api/applications', async (req, res) => {
+    // De-strukturisasi untuk kemudahan membaca
+    const { 
+        nama, 
+        jurusan, 
+        whatsapp, 
+        emailAktif, 
+        universitasSekolah, 
+        posisiMagang, 
+        linkPortfolio 
+    } = req.body;
+    
     try {
-        // Ambil data dari body permintaan
-        const { 
-            nama, 
-            jurusan, 
-            whatsapp, 
-            emailAktif, 
-            universitasSekolah, 
-            posisiMagang, 
-            linkPortfolio 
-        } = req.body;
-        
-        // Buat instance baru dari model User, memetakan data body ke properti skema
+        // Buat instance baru
         const newUser = new User({
             namaLengkap: nama, 
             emailAktif: emailAktif,
@@ -61,30 +68,27 @@ app.post('/api/register', async (req, res) => {
         
         const savedUser = await newUser.save(); // Menyimpan data
         
-        // Kirim response sukses (Status 201 Created)
         res.status(201).json({ 
             message: "Data pendaftar berhasil disimpan!",
             data: savedUser 
         });
         
     } catch (err) {
-        // PERBAIKAN: Penanganan error yang lebih spesifik untuk Validasi
-        
-        // 1. Error Duplikasi Data (Status 409)
-        if (err.code === 11000) {
-            console.error("Duplikasi Data:", err.keyValue);
-            return res.status(409).json({ error: 'Email atau data unik lainnya sudah terdaftar.' });
-        }
-        
-        // 2. Error Validasi Mongoose (Status 400 - Data tidak lengkap/format salah)
-        if (err.name === 'ValidationError') {
-            const messages = Object.values(err.errors).map(val => val.message);
-            console.error("Validasi Gagal:", messages);
-            return res.status(400).json({ error: `Validasi gagal. Pastikan semua kolom terisi: ${messages.join(', ')}` });
-        }
+        // 1. Error Duplikasi Data (Status 409)
+        if (err.code === 11000) {
+            console.error("Duplikasi Data:", err.keyValue);
+            return res.status(409).json({ error: 'Email atau data unik lainnya sudah terdaftar.' });
+        }
+        
+        // 2. Error Validasi Mongoose (Status 400 - Data tidak lengkap/format salah)
+        if (err.name === 'ValidationError') {
+            const messages = Object.values(err.errors).map(val => val.message);
+            console.error("Validasi Gagal:", messages);
+            return res.status(400).json({ error: `Validasi gagal. Pastikan semua kolom terisi: ${messages.join(', ')}` });
+        }
 
+        // Error Tak Terduga (Status 500)
         console.error("Error saat menyimpan data tak terduga:", err);
-        // Kirim response error umum
         res.status(500).json({ error: 'Gagal mengirim aplikasi. Terjadi kesalahan server.' });
     }
 });

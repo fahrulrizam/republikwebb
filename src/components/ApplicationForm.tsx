@@ -1,9 +1,11 @@
 import React, { useState, useEffect, FormEvent, ChangeEvent } from "react";
 import { Send, Upload, CheckCircle } from "lucide-react";
-import { supabase } from "../lib/supabase";
+// Pastikan path ke supabase client sudah benar
+import { supabase } from "../lib/supabase"; 
 
+// --- TYPE DEFINITIONS ---
 type Position = {
-  id: string;
+  id: string; // UUID dari Supabase
   title: string;
 };
 
@@ -13,25 +15,29 @@ type FormData = {
   phone: string;
   school_university: string;
   major: string;
-  position_id: string;
+  position_id: string; 
   cv_url: string;
   motivation: string;
 };
+
+// --- INITIAL STATE ---
+const initialFormData: FormData = {
+  full_name: "",
+  email: "",
+  phone: "",
+  school_university: "",
+  major: "",
+  position_id: "",
+  cv_url: "",
+  motivation: "",
+};
+
 
 export default function ApplicationForm() {
   const [positions, setPositions] = useState<Position[]>([]);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [formData, setFormData] = useState<FormData>({
-    full_name: "",
-    email: "",
-    phone: "",
-    school_university: "",
-    major: "",
-    position_id: "",
-    cv_url: "",
-    motivation: "",
-  });
+  const [formData, setFormData] = useState<FormData>(initialFormData);
 
   // --- Ambil daftar posisi dari Supabase ---
   useEffect(() => {
@@ -39,14 +45,15 @@ export default function ApplicationForm() {
       try {
         const { data, error } = await supabase
           .from("positions")
-          .select("*")
+          .select("id, title") 
           .eq("is_active", true)
           .order("title", { ascending: true });
 
         if (error) throw error;
         setPositions(data || []);
       } catch (err) {
-        console.error("❌ Gagal mengambil data posisi:", err);
+        // Tampilkan pesan error yang lebih detail di console
+        console.error("❌ Gagal mengambil data posisi:", (err as Error).message);
       }
     };
 
@@ -64,47 +71,40 @@ export default function ApplicationForm() {
     }));
   };
 
-  // --- Kirim form ke backend ---
+  // --- Kirim form langsung ke Supabase ---
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
 
-    // Ubah format field sesuai backend
-    const payload = {
-      nama: formData.full_name,
-      email: formData.email,
-      whatsapp: formData.phone,
-      sekolah: formData.school_university,
-      jurusan: formData.major,
-      posisi: formData.position_id,
-      link_cv: formData.cv_url,
-      motivasi: formData.motivation,
-    };
+    // Salin formData untuk validasi client-side
+    const payload = { ...formData };
+    
+    // --- Validasi Client-Side Tambahan ---
+    if (!payload.position_id) {
+        alert("Mohon pilih posisi yang dilamar.");
+        setLoading(false);
+        return;
+    }
 
     try {
-      const res = await fetch("http://localhost:5000/api/applications", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+      const { error } = await supabase
+        .from("applications")
+        .insert([payload]); 
 
-      if (!res.ok) throw new Error("Gagal mengirim aplikasi");
+      if (error) {
+          throw new Error(error.message || "Gagal mengirim aplikasi melalui Supabase.");
+      }
 
       setSuccess(true);
-      setFormData({
-        full_name: "",
-        email: "",
-        phone: "",
-        school_university: "",
-        major: "",
-        position_id: "",
-        cv_url: "",
-        motivation: "",
-      });
+      // Reset form data setelah sukses
+      setFormData(initialFormData);
 
+      // Sembunyikan pesan sukses setelah 4 detik
       setTimeout(() => setSuccess(false), 4000);
     } catch (err: any) {
-      alert("Terjadi kesalahan: " + err.message);
+      const errorMessage = err.message || "Terjadi kesalahan yang tidak diketahui.";
+      alert("Terjadi kesalahan saat mengirim aplikasi: " + errorMessage);
+      console.error("❌ Gagal mengirim aplikasi:", errorMessage, err);
     } finally {
       setLoading(false);
     }
@@ -240,7 +240,7 @@ export default function ApplicationForm() {
                 >
                   <option value="">Pilih Posisi</option>
                   {positions.map((pos) => (
-                    <option key={pos.id} value={pos.title}>
+                    <option key={pos.id} value={pos.id}>
                       {pos.title}
                     </option>
                   ))}
