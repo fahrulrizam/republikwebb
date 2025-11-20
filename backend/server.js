@@ -13,18 +13,22 @@ import cors from 'cors';
 import User from './models/User.js'; 
 
 const app = express();
-// Menggunakan 5000 sebagai fallback port
+// Menggunakan 5000 sebagai fallback port untuk pengembangan lokal
 const PORT = process.env.PORT || 5000;
-// Menggunakan MONGODB_URI seperti yang didefinisikan di .env
+// Menggunakan MONGODB_URI seperti yang didefinisikan di .env (untuk koneksi DB)
 const MONGODB_URI = process.env.MONGODB_URI;
 
 // --- 2. MIDDLEWARE & KONFIGURASI CORS ---
 
-// List Origin yang Diizinkan (Front-end domains)
+// DAFTAR ORIGIN YANG DIIZINKAN (Domain Front-end)
+// PASTIKAN URL VERSEL ANDA ADA DI SINI AGAR FRONT-END BISA AKSES BACKEND!
 const ALLOWED_ORIGINS = [
     'http://localhost:5173', // FRONTEND DEV (Vite/React)
-    'http://localhost:5000',
-    'https://republikweb-app.onrender.com' // Contoh domain production
+    'http://localhost:5000', // BACKEND LOKAL (Jika diakses dari port lain)
+    'https://republikwebb-1.onrender.com', // BACKEND RENDER (Tidak wajib, tapi aman)
+    'https://republik-web.vercel.app', // DOMAIN VERSEL YANG SUDAH BERHASIL DEPLOY
+    // Tambahkan domain Vercel lainnya di sini jika ada:
+    // 'https://nama-proyek-lain.vercel.app' 
 ];
 
 // Konfigurasi CORS yang ketat
@@ -55,8 +59,9 @@ app.use(express.json());
 
 // PERBAIKAN KRITIS: Cek keberadaan MONGODB_URI
 if (!MONGODB_URI) {
-    console.error('❌ MONGODB_URI tidak ditemukan di file .env. Harap tentukan URI koneksi MongoDB.');
-    process.exit(1);
+    console.error('❌ MONGODB_URI tidak ditemukan. Harap tentukan URI koneksi MongoDB di Environment Variables Render/Lokal.');
+    // Hentikan proses hanya di lokal/lingkungan dev. Di Render, proses akan otomatis mati jika gagal.
+    // process.exit(1); 
 }
 
 // Menghubungkan ke MongoDB
@@ -66,13 +71,13 @@ mongoose.connect(MONGODB_URI)
         // MENANGANI KESALAHAN OTENTIKASI
         if (err.message && err.message.includes('auth failed')) {
             console.error('❌ MongoDB connection error: Authentication Failed.');
-            console.error('   Periksa kembali USERNAME dan PASSWORD Anda di file .env untuk MONGODB_URI.');
+            console.error('   Periksa kembali USERNAME dan PASSWORD Anda di MONGODB_URI Render.');
         } else {
             console.error('❌ MongoDB connection error:', err.message);
         }
 
         // Hentikan proses jika koneksi DB gagal
-        process.exit(1);
+        // process.exit(1); // Nonaktifkan exit agar Render dapat mencoba kembali
     });
 
 // --- 4. RUTE UTAMA (Testing Koneksi) ---
@@ -144,7 +149,8 @@ app.post('/api/register', async (req, res) => {
 // --- 6. START SERVER ---
 app.listen(PORT, () => {
     console.log(`\n============================================`);
-    console.log(`🚀 Server is running on http://localhost:${PORT}`);
-    console.log(`🔗 Endpoint Pendaftaran: http://localhost:${PORT}/api/register`);
+    // Output yang menunjukkan server berjalan dengan port Render (jika ada)
+    console.log(`🚀 Server is running on port ${PORT}`); 
+    console.log(`🔗 Endpoint Pendaftaran: /api/register`);
     console.log(`============================================\n`);
 });

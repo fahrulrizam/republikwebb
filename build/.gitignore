@@ -1,0 +1,17 @@
+# Dependency Directories
+/node_modules
+
+# Environment variables
+.env
+
+# Build files
+/dist
+/build
+
+# Supabase Local
+/supabase/.secrets
+/supabase/db/
+/supabase/config.toml
+
+# Log files
+npm-debug.log
