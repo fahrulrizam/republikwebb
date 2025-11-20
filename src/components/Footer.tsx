@@ -2,13 +2,16 @@ import React, { useState } from 'react';
 import { Rocket, Mail, Phone, MapPin } from 'lucide-react';
 
 // --- TYPE DEFINITIONS ---
-// Definisikan type untuk FormEvent jika menggunakan TypeScript/TSX
 type FormEvent = React.FormEvent<HTMLFormElement>;
+type ChangeEvent = React.ChangeEvent<HTMLInputElement>;
 
 
 /**
  * Komponen Fungsional untuk Formulir Newsletter
- * Mengirim data ke endpoint /api/applications.
+ * Mengirim data ke endpoint /api/register (sesuai dengan server.js terbaru).
+ *
+ * Catatan: Menggunakan 'Lainnya' untuk posisiMagang diasumsikan sebagai nilai
+ * yang valid di dalam ENUM skema MongoDB Anda.
  */
 const NewsletterForm = () => { 
     const [email, setEmail] = useState('');
@@ -16,12 +19,10 @@ const NewsletterForm = () => {
     const [isError, setIsError] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     
-    // Endpoint API yang DITARGETKAN: /api/applications (di port 5000)
-    // PERHATIAN: Pastikan port ini sesuai dengan server.js Anda.
-    const API_URL = 'http://localhost:5000/api/applications'; 
+    // PERBAIKAN KRITIS: Menggunakan rute yang disepakati untuk registrasi newsletter.
+    const API_URL = 'http://localhost:5000/api/register'; 
 
     // Fungsi yang dipanggil saat form disubmit
-    // Menggunakan type FormEvent yang didefinisikan di atas (atau React.FormEvent<HTMLFormElement>)
     const handleSubmit = async (e: FormEvent) => {
         e.preventDefault();
         setMessage(''); 
@@ -36,15 +37,17 @@ const NewsletterForm = () => {
         }
 
         try {
-            // Data yang dikirim HARUS mencakup semua bidang yang 'required' di skema Application MongoDB.
+            // DATA HARUS SINKRON dengan skema Application MongoDB (fields required)
+            // Menggunakan nilai default untuk field yang tidak relevan dengan newsletter.
             const payload = {
-                // Perbaikan: Menggunakan nama field yang sesuai dengan server.js Anda.
+                // Menggunakan nama field yang sesuai dengan server.js Anda.
                 emailAktif: email,
                 nama: `[NEWSLETTER] ${email}`, // Label khusus di DB
                 whatsapp: '0', // Diisi nilai default
-                universitasSekolah: 'Newsletter Subscriber', // Nilai default
-                jurusan: 'Newsletter', // Nilai default
-                posisiMagang: 'Newsletter Subscriber', // Label posisi khusus
+                universitasSekolah: 'Umum/Lainnya', // Nilai default yang lebih generik
+                jurusan: 'Informasi Umum', // Nilai default yang lebih generik
+                // Menggunakan 'Lainnya' sebagai nilai default yang aman untuk ENUM
+                posisiMagang: 'Lainnya', 
                 linkPortfolio: 'N/A', // Nilai default
             };
 
@@ -56,28 +59,57 @@ const NewsletterForm = () => {
                 body: JSON.stringify(payload), 
             });
             
-            const data = await response.json();
+            // --- Logika Penanganan Respons yang Ditingkatkan ---
+            let data: any = {};
+            try {
+                // Mencoba mendapatkan body respons hanya jika header menunjukkan JSON
+                const contentType = response.headers.get("content-type");
+                if (contentType && contentType.includes("application/json")) {
+                    data = await response.json();
+                } else if (response.status === 404) {
+                    // Jika 404, respons pasti bukan JSON dari rute yang benar
+                    throw new Error(`[404] Rute API tidak ditemukan: ${API_URL}`);
+                } else {
+                    // Respons non-JSON lainnya (misal HTML server error page)
+                    throw new Error(`Server merespons dengan status ${response.status} dan bukan JSON.`);
+                }
+            } catch (jsonError: any) {
+                // Menangani error parsing JSON atau error 404 eksplisit
+                console.error("Gagal memproses respons server:", jsonError.message);
+                if (jsonError.message.includes('404')) {
+                     // Error 404 ditangani secara khusus
+                     data = { error: jsonError.message + ". Pastikan server berjalan dan rute di server.js adalah '/api/register'." };
+                } else {
+                     data = { error: jsonError.message || "Terjadi kesalahan saat memproses respons server." };
+                }
+            }
+            // --- Akhir Logika Penanganan Respons ---
             
-            if (response.ok) {
-                // Skenario Sukses (Status 201 Created)
+            if (response.ok || response.status === 201) {
+                // Skenario Sukses (Status 200 OK atau 201 Created)
                 setIsError(false);
-                setMessage("Berhasil berlangganan! Data Anda telah dicatat.");
+                setMessage("🎉 Berhasil berlangganan! Data Anda telah dicatat di database.");
                 setEmail(''); // Kosongkan input setelah sukses
             } else if (response.status === 409) {
-                // Skenario Konflik (Email sudah terdaftar) - Duplikasi (Error 11000 di server)
+                // Skenario Konflik (Email sudah terdaftar - Cek dari server.js)
                 setIsError(true);
                 setMessage(data.error || "Email ini sudah terdaftar. Tidak perlu subscribe lagi.");
-            } else {
-                // Skenario Gagal Lainnya (400 Bad Request, 500 Internal Server Error)
+            } else if (response.status === 400 && data.error && data.error.includes('enum value')) {
+                // Penanganan Error Validasi ENUM posisiMagang
                 setIsError(true);
-                setMessage(data.error || "Gagal berlangganan. Silakan periksa email Anda atau coba lagi.");
+                setMessage(`Gagal: Posisi magang tidak valid. Harap periksa skema database Anda. (Mungkin: ${data.error})`);
+            } else {
+                // Skenario Gagal Lainnya (400 Bad Request, 500 Internal Server Error, dll.)
+                setIsError(true);
+                setMessage(data.error || `Gagal berlangganan (Status: ${response.status}). Silakan coba lagi.`);
             }
             
         } catch (error) {
-            // Skenario Error Koneksi Jaringan
+            // Skenario Error Koneksi Jaringan atau Error Try-Catch
             console.error('Submission error:', error);
             setIsError(true);
-            setMessage("Koneksi gagal. Pastikan Server Node.js Anda berjalan di " + API_URL + ".");
+            // Pesan ini muncul jika koneksi HTTP gagal total (misal server mati)
+            setMessage("Koneksi jaringan terputus atau server tidak merespon. Pastikan Server Node.js Anda berjalan.");
         } finally {
             setIsLoading(false);
         }
@@ -90,7 +122,6 @@ const NewsletterForm = () => {
             {/* Kotak Pesan Feedback */}
             {message && (
                 <div 
-                    // Menyesuaikan warna teks agar terlihat di background gelap
                     className={`p-3 rounded-xl text-white text-sm font-medium transition-all duration-300 ${isError ? 'bg-red-700 border border-red-500 shadow-xl' : 'bg-green-700 border border-green-500 shadow-xl'}`}
                     role="alert"
                 >
@@ -107,7 +138,7 @@ const NewsletterForm = () => {
                     type="email"
                     placeholder="Email Anda"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(e: ChangeEvent) => setEmail(e.target.value)}
                     required
                     disabled={isLoading}
                     className="flex-1 px-4 py-2 rounded-xl bg-blue-800 border border-blue-700 text-white placeholder-blue-400 focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
@@ -135,7 +166,7 @@ const NewsletterForm = () => {
 };
 // END NewsletterForm
 
-// Mengubah nama App menjadi Footer
+// Komponen utama: Footer
 export default function Footer() {
     const currentYear = new Date().getFullYear();
     

@@ -1,50 +1,59 @@
-// models/User.js
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
-// Skema ini harus mencerminkan semua data yang Anda kirim dari frontend
-const userSchema = new mongoose.Schema({
-    // INFORMASI PRIBADI
+const UserSchema = new mongoose.Schema({
+    // Nama Lengkap (Wajib)
     namaLengkap: {
         type: String,
-        required: [true, 'Nama lengkap wajib diisi.'], // Wajib
-        trim: true
+        required: [true, 'Nama lengkap wajib diisi.'],
+        trim: true,
     },
+    // Email Aktif (Wajib, harus unik)
     emailAktif: {
         type: String,
-        required: [true, 'Email wajib diisi.'],
-        unique: true, // Tidak boleh ada duplikasi email
+        required: [true, 'Email aktif wajib diisi.'],
+        unique: true, // Dipastikan unik di database
         lowercase: true,
-        trim: true
+        trim: true,
+        match: [/.+\@.+\..+/, 'Harap masukkan alamat email yang valid.'],
     },
+    // Nomor WhatsApp
     nomorWhatsApp: {
         type: String,
-        required: [true, 'Nomor WhatsApp wajib diisi.']
+        trim: true,
+        default: null
     },
+    // Universitas/Sekolah
     universitasSekolah: {
         type: String,
-        required: [true, 'Institusi wajib diisi.']
+        trim: true,
+        default: null
     },
-    
-    // DETAIL APLIKASI
+    // Jurusan
     jurusan: {
         type: String,
-        required: [true, 'Jurusan wajib diisi.']
+        trim: true,
+        default: null
     },
+    // Posisi Magang yang Dilamar (Wajib)
     posisiMagang: {
         type: String,
-        required: [true, 'Posisi magang wajib diisi.']
+        required: [true, 'Posisi magang wajib diisi.'],
+        trim: true,
     },
+    // Link Portofolio
     linkPortfolio: {
         type: String,
-        required: [true, 'Link Portfolio/CV wajib diisi.'] 
-    },
-    
-    // TIMESTAMP
-    tanggalDaftar: {
-        type: Date,
-        default: Date.now
+        trim: true,
+        default: null
     }
+}, {
+    timestamps: true // Menambahkan createdAt dan updatedAt
 });
 
-const User = mongoose.model('User', userSchema);
-module.exports = User;
+// Indeks untuk memastikan pencarian cepat dan keunikan
+UserSchema.index({ emailAktif: 1 }, { unique: true });
+
+// Buat Model
+const User = mongoose.model('User', UserSchema);
+
+export default User;
