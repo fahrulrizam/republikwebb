@@ -24,7 +24,7 @@ const NewsletterForm = () => {
     // Menggunakan type FormEvent yang didefinisikan di atas (atau React.FormEvent<HTMLFormElement>)
     const handleSubmit = async (e: FormEvent) => {
         e.preventDefault();
-        setMessage(''); // Bersihkan pesan sebelumnya
+        setMessage(''); 
         setIsLoading(true);
 
         // Validasi client-side dasar
