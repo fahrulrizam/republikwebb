@@ -1,50 +1,54 @@
-// models/User.js
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
-// Skema ini harus mencerminkan semua data yang Anda kirim dari frontend
+// Definisikan Skema Pendaftar
 const userSchema = new mongoose.Schema({
-    // INFORMASI PRIBADI
     namaLengkap: {
         type: String,
-        required: [true, 'Nama lengkap wajib diisi.'], // Wajib
+        required: [true, 'Nama lengkap wajib diisi.'],
         trim: true
     },
     emailAktif: {
         type: String,
-        required: [true, 'Email wajib diisi.'],
-        unique: true, // Tidak boleh ada duplikasi email
+        required: [true, 'Email aktif wajib diisi.'],
+        unique: true, // Pastikan email unik (akan memicu error 11000 di server.js)
+        trim: true,
         lowercase: true,
-        trim: true
+        match: [/.+@.+\..+/, 'Harap masukkan email yang valid.']
     },
     nomorWhatsApp: {
         type: String,
-        required: [true, 'Nomor WhatsApp wajib diisi.']
+        trim: true,
+        default: null
     },
     universitasSekolah: {
         type: String,
-        required: [true, 'Institusi wajib diisi.']
+        trim: true,
+        default: null
     },
-    
-    // DETAIL APLIKASI
     jurusan: {
         type: String,
-        required: [true, 'Jurusan wajib diisi.']
+        trim: true,
+        default: null
     },
     posisiMagang: {
         type: String,
-        required: [true, 'Posisi magang wajib diisi.']
+        required: [true, 'Posisi magang wajib diisi.'],
+        enum: ['Frontend Developer', 'Backend Developer', 'UI/UX Designer', 'Digital Marketing', 'Lainnya'],
+        trim: true
     },
     linkPortfolio: {
         type: String,
-        required: [true, 'Link Portfolio/CV wajib diisi.'] 
+        trim: true,
+        default: null
     },
-    
-    // TIMESTAMP
-    tanggalDaftar: {
+    tanggalPendaftaran: {
         type: Date,
         default: Date.now
     }
-});
+}, { timestamps: true }); // Tambahkan createdAt dan updatedAt
 
+// Buat Model dari Skema
 const User = mongoose.model('User', userSchema);
-module.exports = User;
+
+// Ekspor Model sebagai default agar kompatibel dengan Dynamic Import di server.js
+export default User;

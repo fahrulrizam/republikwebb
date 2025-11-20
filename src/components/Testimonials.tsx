@@ -1,9 +1,23 @@
 import { useEffect, useState } from 'react';
 import { Star, Quote } from 'lucide-react';
-import { supabase, Testimonial } from '../lib/supabase';
+import { supabase } from "../lib/supabaseClient.ts";
+
+// --- DEFINISI TYPE BARU UNTUK MENGHILANGKAN GARIS MERAH ---
+type Testimonial = {
+    id: string;
+    name: string;
+    position: string;
+    rating: number; // 1 to 5
+    content: string;
+    photo_url: string | null;
+    is_published: boolean;
+    created_at: string;
+};
+// --------------------------------------------------------
 
 export default function Testimonials() {
-  const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
+  // Menggunakan type Testimonial yang sudah didefinisikan
+  const [testimonials, setTestimonials] = useState<Testimonial[]>([]); 
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -19,7 +33,8 @@ export default function Testimonials() {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setTestimonials(data || []);
+      // Memastikan data yang diterima sesuai dengan Testimonial[]
+      setTestimonials(data as Testimonial[] || []); 
     } catch (error) {
       console.error('Error fetching testimonials:', error);
     } finally {
@@ -61,8 +76,9 @@ export default function Testimonials() {
 
               <div className="flex items-center gap-4 mb-6">
                 <img
-                  src={testimonial.photo_url || 'https://images.pexels.com/photos/771742/pexels-photo-771742.jpeg?auto=compress&cs=tinysrgb&w=200'}
+                  src={testimonial.photo_url || 'https://placehold.co/64x64/CCCCCC/333333?text=Alumni'}
                   alt={testimonial.name}
+                  // Sumber gambar placeholder telah disederhanakan
                   className="w-16 h-16 rounded-full object-cover border-4 border-white shadow-md"
                 />
                 <div>
@@ -72,7 +88,8 @@ export default function Testimonials() {
               </div>
 
               <div className="flex gap-1 mb-4">
-                {[...Array(testimonial.rating)].map((_, i) => (
+                {/* Menggunakan Math.min untuk memastikan rating tidak lebih dari 5 */}
+                {[...Array(Math.min(testimonial.rating, 5))].map((_, i) => ( 
                   <Star key={i} className="w-5 h-5 text-orange-500 fill-orange-500" />
                 ))}
               </div>

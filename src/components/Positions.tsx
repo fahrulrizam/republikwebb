@@ -1,6 +1,18 @@
 import { useEffect, useState } from 'react';
 import { Code, Palette, Video, TrendingUp, Search, Layers, ArrowRight } from 'lucide-react';
-import { supabase, Position } from '../lib/supabase';
+import { supabase } from "../lib/supabaseClient.ts";
+
+// --- DEFINISI TYPE BARU UNTUK MENGHILANGKAN GARIS MERAH ---
+type Position = {
+    id: string;
+    title: string;
+    description: string;
+    slug: 'programmer' | 'content-creator' | 'video-editor' | 'digital-marketing' | 'seo-specialist' | 'ui-ux-designer' | string;
+    requirements: string; // Diasumsikan ini adalah string yang dipisahkan koma
+    is_active: boolean;
+    created_at: string;
+};
+// --------------------------------------------------------
 
 const iconMap: Record<string, React.ElementType> = {
   'programmer': Code,
@@ -12,6 +24,7 @@ const iconMap: Record<string, React.ElementType> = {
 };
 
 export default function Positions() {
+  // Menggunakan type Position yang sudah didefinisikan
   const [positions, setPositions] = useState<Position[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -28,7 +41,8 @@ export default function Positions() {
         .order('created_at', { ascending: true });
 
       if (error) throw error;
-      setPositions(data || []);
+      // Memastikan data yang diterima sesuai dengan Position[]
+      setPositions(data as Position[] || []);
     } catch (error) {
       console.error('Error fetching positions:', error);
     } finally {
@@ -41,7 +55,8 @@ export default function Positions() {
     if (formElement) {
       formElement.scrollIntoView({ behavior: 'smooth' });
       setTimeout(() => {
-        const positionSelect = document.getElementById('position') as HTMLSelectElement;
+        // Pengecekan tipe untuk memastikan elemen adalah HTMLSelectElement
+        const positionSelect = document.getElementById('position') as HTMLSelectElement; 
         if (positionSelect) {
           positionSelect.value = positionId;
         }
@@ -92,7 +107,8 @@ export default function Positions() {
                 <div className="mb-6">
                   <h4 className="font-semibold text-blue-900 mb-2">Requirements:</h4>
                   <ul className="space-y-2 text-sm text-gray-600">
-                    {position.requirements.split(',').slice(0, 3).map((req, idx) => (
+                    {/* Mengatasi potential error jika requirements null/undefined, dan membatasi hanya 3 item */}
+                    {(position.requirements || '').split(',').slice(0, 3).map((req, idx) => ( 
                       <li key={idx} className="flex items-start gap-2">
                         <span className="text-orange-500 mt-1">•</span>
                         <span>{req.trim()}</span>

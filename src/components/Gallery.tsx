@@ -1,7 +1,20 @@
 import { useEffect, useState } from 'react';
-import { supabase, GalleryItem } from '../lib/supabase';
+import { supabase } from "../lib/supabaseClient.ts";
+
+// --- DEFINISI TYPE BARU UNTUK MENGHILANGKAN GARIS MERAH ---
+type GalleryItem = {
+    id: string;
+    media_url: string;
+    title: string;
+    caption: string | null;
+    is_published: boolean;
+    display_order: number;
+    created_at: string;
+};
+// --------------------------------------------------------
 
 export default function Gallery() {
+  // Menggunakan type GalleryItem yang sudah didefinisikan
   const [items, setItems] = useState<GalleryItem[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -18,7 +31,8 @@ export default function Gallery() {
         .order('display_order', { ascending: true });
 
       if (error) throw error;
-      setItems(data || []);
+      // Memastikan data yang diterima sesuai dengan GalleryItem[]
+      setItems(data as GalleryItem[] || []);
     } catch (error) {
       console.error('Error fetching gallery items:', error);
     } finally {
@@ -54,13 +68,21 @@ export default function Gallery() {
           {items.map((item, index) => (
             <div
               key={item.id}
+              // Item pertama mengambil ruang 2x2 untuk efek masonry
               className={`group relative overflow-hidden rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 ${
                 index === 0 ? 'md:col-span-2 md:row-span-2' : ''
               }`}
             >
               <img
-                src={item.media_url}
+                src={item.media_url || 'https://placehold.co/600x400/CCCCCC/333333?text=Foto+Kegiatan'}
                 alt={item.title}
+                // Menambahkan fallback gambar placeholder
+                onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    if (target.src !== 'https://placehold.co/600x400/CCCCCC/333333?text=Foto+Kegiatan') {
+                        target.src = 'https://placehold.co/600x400/CCCCCC/333333?text=Foto+Kegiatan';
+                    }
+                }}
                 className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-blue-900/90 via-blue-900/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-6">
