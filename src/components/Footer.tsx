@@ -20,7 +20,7 @@ const NewsletterForm = () => {
     const [isLoading, setIsLoading] = useState(false);
     
     // PERBAIKAN KRITIS: Menggunakan rute yang disepakati untuk registrasi newsletter.
-    const API_URL = 'http://localhost:5000/api/register'; 
+    const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
 
     // Fungsi yang dipanggil saat form disubmit
     const handleSubmit = async (e: FormEvent) => {

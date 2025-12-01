@@ -26,7 +26,7 @@ const ALLOWED_ORIGINS = [
     'http://localhost:5173', // FRONTEND DEV (Vite/React)
     'http://localhost:5000', // BACKEND LOKAL (Jika diakses dari port lain)
     'https://republikwebb-1.onrender.com', // BACKEND RENDER (Tidak wajib, tapi aman)
-    'https://republik-web.vercel.app', // DOMAIN VERSEL YANG SUDAH BERHASIL DEPLOY
+    'https://republikwebb-to1r.vercel.app/', // DOMAIN VERSEL YANG SUDAH BERHASIL DEPLOY
     // Tambahkan domain Vercel lainnya di sini jika ada:
     // 'https://nama-proyek-lain.vercel.app' 
 ];
