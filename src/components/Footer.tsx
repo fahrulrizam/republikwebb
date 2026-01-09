@@ -14,7 +14,7 @@ const NewsletterForm = () => {
     
     // Endpoint API yang DITARGETKAN: /api/applications (di port 5000)
     // PERHATIAN: Pastikan port ini sesuai dengan server.js Anda.
-    const API_URL = 'https://republikwebb-backend.onrender.com/api/applications';
+    const API_URL = 'https://republikwebb-backend.onrender.com/api';
 
     // Fungsi yang dipanggil saat form disubmit
     // Menggunakan type FormEvent yang didefinisikan di atas (atau React.FormEvent<HTMLFormElement>)
