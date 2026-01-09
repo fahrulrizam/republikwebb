@@ -1,7 +1,6 @@
-// server.js
+// server.js final version
 
 // --- 1. SETUP DAN IMPOR ---
-// Wajib dimuat paling awal untuk membaca .env
 require('dotenv').config(); 
 const express = require('express');
 const mongoose = require('mongoose');
@@ -9,40 +8,47 @@ const cors = require('cors');
 const User = require('./models/User'); 
 
 const app = express();
-const PORT = process.env.PORT || 3000;
-// PERBAIKAN KRITIS: Ganti process.env.MONGODB_URI menjadi process.env.MONGO_URI
-// atau pastikan nama variabel di file .env adalah MONGODB_URI.
-// (Diasumsikan Anda menggunakan MONGO_URI di file .env sebelumnya, maka kami sesuaikan di sini)
-const MONGODB_URI = process.env.MONGO_URI; 
+
+// Render akan otomatis memberikan port melalui process.env.PORT
+const PORT = process.env.PORT || 5000; 
+const MONGODB_URI = process.env.MONGO_URI || process.env.MONGODB_URI; 
 
 // --- 2. MIDDLEWARE ---
 app.use(express.json()); 
-app.use(cors());
+
+// Konfigurasi CORS yang lebih aman
+app.use(cors({
+    origin: '*', // Nantinya ganti '*' dengan URL Frontend Anda (misal: https://web-anda.vercel.app)
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
 
 // --- 3. KONEKSI DATABASE ---
-// Pengecekan agar MONGODB_URI tidak undefined sebelum mencoba connect
 if (!MONGODB_URI) {
-    console.error("❌ Variabel MONGO_URI tidak ditemukan di file .env!");
+    console.error("❌ Variabel MONGO_URI tidak ditemukan! Pastikan sudah di-set di Dashboard Render (Environment).");
     process.exit(1);
 }
 
+// Menambahkan opsi koneksi untuk stabilitas di cloud
 mongoose.connect(MONGODB_URI)
-    .then(() => console.log('✅ MongoDB Atlas Connected successfully!'))
-    .catch(err => {
-        // Penanganan error koneksi (autentikasi atau jaringan)
-        console.error('❌ MongoDB connection error: Harap periksa MONGODB_URI dan Password Anda. Error:', err.message);
-        process.exit(1); 
-    });
+    .then(() => console.log('✅ MongoDB Atlas Connected successfully!'))
+    .catch(err => {
+        console.error('❌ MongoDB connection error:', err.message);
+        // Jangan langsung exit jika di server, biarkan Render mencoba restart otomatis
+    });
 
-
-// --- 4. RUTE UTAMA (Testing Koneksi) ---
+// --- 4. RUTE UTAMA ---
 app.get('/', (req, res) => {
-    res.send('Server is running and connected to MongoDB!');
+    res.json({ 
+        status: "Active", 
+        message: "Republikweb Backend is running!",
+        database: mongoose.connection.readyState === 1 ? "Connected" : "Disconnected"
+    });
 });
 
-
-// --- 5. RUTE BARU UNTUK MENYIMPAN DATA APLIKASI ---
+// --- 5. RUTE API APLIKASI (POST) ---
 app.post('/api/applications', async (req, res) => {
+    // Destructuring data dari body
     const { 
         namaLengkap, 
         jurusan, 
@@ -53,9 +59,13 @@ app.post('/api/applications', async (req, res) => {
         linkPortfolio 
     } = req.body;
     
+    // Validasi sederhana sebelum memproses ke database
+    if (!emailAktif) {
+        return res.status(400).json({ error: 'Email wajib diisi.' });
+    }
+
     try {
         const newUser = new User({
-            // PERBAIKAN DI SINI: Gunakan namaLengkap, bukan nama
             namaLengkap: namaLengkap || "Subscriber", 
             emailAktif: emailAktif,
             nomorWhatsApp: whatsapp || "0",
@@ -67,26 +77,29 @@ app.post('/api/applications', async (req, res) => {
         
         const savedUser = await newUser.save();
         
-        res.status(201).json({ 
+        return res.status(201).json({ 
+            success: true,
             message: "Data pendaftar berhasil disimpan!",
             data: savedUser 
         });
         
     } catch (err) {
+        // Handle Error Duplikasi Email (Unique Key di MongoDB)
         if (err.code === 11000) {
-            return res.status(409).json({ error: 'Email ini sudah terdaftar.' });
+            return res.status(409).json({ error: 'Email ini sudah terdaftar di sistem kami.' });
         }
         
+        // Handle Error Validasi Mongoose
         if (err.name === 'ValidationError') {
-            return res.status(400).json({ error: 'Validasi gagal. Pastikan format benar.' });
+            return res.status(400).json({ error: 'Format data tidak valid.', details: err.message });
         }
 
-        res.status(500).json({ error: 'Terjadi kesalahan server.' });
+        console.error("Server Error:", err);
+        return res.status(500).json({ error: 'Terjadi kesalahan pada server internal.' });
     }
 });
 
-
 // --- 6. START SERVER ---
 app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+    console.log(`🚀 Server is running on port ${PORT}`);
 });
