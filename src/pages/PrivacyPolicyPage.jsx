@@ -1,8 +1,6 @@
 import React from 'react';
 
-/**
- * Komponen Halaman Kebijakan Privasi (Privacy Policy)
- */
+
 export default function PrivacyPolicyPage() {
   // Membuat format tanggal Indonesia secara dinamis
   const tanggalSekarang = new Date().toLocaleDateString('id-ID', {

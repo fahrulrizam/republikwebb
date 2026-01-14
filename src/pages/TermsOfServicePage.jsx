@@ -1,8 +1,6 @@
 import React from 'react';
 
-/**
- * Komponen Halaman Syarat dan Ketentuan (Terms of Service)
- */
+
 export default function TermsOfServicePage() {
   // Membuat format tanggal Indonesia secara dinamis (Otomatis Update)
   const tanggalSekarang = new Date().toLocaleDateString('id-ID', {

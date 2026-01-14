@@ -54,8 +54,12 @@ export default function Navbar() {
   ];
 
   // FUNGSI INTI: Menggabungkan scrolling manual (di Home) dan navigasi Link
-  const handleNavLinkClick = (e, href) => {
-    setIsOpen(false);
+ const handleNavLinkClick = (
+  e: React.MouseEvent<HTMLAnchorElement>,
+  href: string
+) => {
+
+
     
     // Periksa apakah ini hash link DAN kita sudah berada di halaman Home
     if (href.startsWith('/#') && location.pathname === '/') {
@@ -98,9 +102,10 @@ export default function Navbar() {
                 // Gunakan onClick untuk memanggil fungsi custom scroll/navigasi
                 onClick={(e) => handleNavLinkClick(e, link.href)}
                 className={`font-semibold transition-colors ${
-                    // Logika warna teks: Teks Home (hash) menggunakan textColor, teks statis selalu solid.
-                    link.href.startsWith('/#') ? textColor : 'text-blue-900'
-                } hover:text-orange-500`}
+  isScrolled || location.pathname !== '/'
+    ? 'text-blue-900'
+    : 'text-white'
+} hover:text-orange-500`}
               >
                 {link.label}
               </Link>
